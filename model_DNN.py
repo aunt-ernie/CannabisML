@@ -97,6 +97,7 @@ def create_model(init='normal', activation_1='relu', activation_2='relu', optimi
 
 
 # Cyclic learning rate range test
+kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=2)
 for train_indices, test_indices in kfold.split(data, labels):
     X_train = [data[idx] for idx in train_indices]
     y_train = [labels[idx] for idx in train_indices]
