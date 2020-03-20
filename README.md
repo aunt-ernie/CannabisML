@@ -8,6 +8,7 @@ sMRI features were derived from Mindboggle (Freesurfer + ANTs) (Klein et al., 20
 dMRI features were derived from TBSS+MELODIC (FSL) (Schouten et al., 2017)
 
 Feature Normalization
+---------------------
 A GLM used to determine residuals, controlled for covariates. Residuals were subsequently used as features during training/testing.
 
 𝑦̂ = 𝛽0 + 𝛽1𝐼𝐶𝑉 + 𝛽2𝑆𝑒𝑥 + 𝛽3𝐴𝑔𝑒 + 𝛽4𝑆𝑖𝑡𝑒 
