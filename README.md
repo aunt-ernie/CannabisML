@@ -8,20 +8,19 @@ dMRI features were derived from TBSS+MELODIC (FSL) (Schouten et al., 2017)
 Feature Normalization
 A GLM used to determine residuals, controlled for covariates. Residuals were subsequently used as features during training/testing.
 
-𝑦̂ =𝛽0+𝛽1𝐼𝐶𝑉+𝛽2𝑆𝑒𝑥+𝛽3𝐴𝑔𝑒+𝛽4𝑆𝑖𝑡𝑒 
+𝑦̂ = 𝛽0 + 𝛽1𝐼𝐶𝑉 + 𝛽2𝑆𝑒𝑥 + 𝛽3𝐴𝑔𝑒 + 𝛽4𝑆𝑖𝑡𝑒 
 𝜀=𝑦−𝑦̂  
-
 𝑟𝑒𝑠𝑖𝑑𝑢𝑎𝑙𝑠=𝜀 
 
 Feature Selection
 An ANOVA was used to determine F-stastics and the top  𝑛𝑡ℎ  percentile of F-statistics was during training/testing.
 
-The  𝑛𝑡ℎ  percentile was determined via gridsearch.
+The 𝑛𝑡ℎ percentile was determined via gridsearch.
 
 SVM and DNN
 Nested, statified k-folds cross validation was used for both the SVM and DNN classifier.
 
-SVM hyperparamters include cost ( 𝐶 ), gamma ( 𝛾 ), and kernel ( 𝜅 ).
+SVM hyperparamters include cost (𝐶), gamma (𝛾), and kernel (𝜅).
 
 DNN hyperparameters inlcude initalizers, activation functions, batch size and weight decay.
 
