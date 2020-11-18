@@ -1,5 +1,9 @@
 """Nested K-folds paradigm."""
 
+import warnings
+
+import pandas as pd
+
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, StratifiedKFold
@@ -8,8 +12,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import roc_curve, auc
 from sklearn.feature_selection import f_classif, SelectPercentile
 
-from clr_callback import CyclicLR
+from keras.wrappers.scikit_learn import KerasClassifier
 from keras.callbacks import EarlyStopping
+from clr_callback import CyclicLR
+
+from .stats import ANOVASelection
+from .models import create_model
 
 
 def train_test(model_type, data, labels, feature_names, percentile=[20, 40, 60, 80]):
@@ -65,8 +73,6 @@ def train_test(model_type, data, labels, feature_names, percentile=[20, 40, 60, 
     all_fn = []
 
     # Plotting
-    tprs = []
-    aucs = []
     y_test_plot = []
     probas_plot = []
 
@@ -76,21 +82,21 @@ def train_test(model_type, data, labels, feature_names, percentile=[20, 40, 60, 
     # Define grid hyper-parameters
     if model_type == 'SVM':
         tuned_parameters = dict(
-                                    anova__percentile = percentile,
-                                    svc__kernel = ['rbf', 'sigmoid', 'poly'],
-                                    svc__gamma = [2**g for g in range(-15, 4)],
-                                    svc__C = [2**C for C in range(-5, 16)]
-                                )
+            anova__percentile = percentile,
+            svc__kernel = ['rbf', 'sigmoid', 'poly'],
+            svc__gamma = [2**g for g in range(-15, 4)],
+            svc__C = [2**C for C in range(-5, 16)]
+        )
     elif model_type == "DNN":
         tuned_parameters = dict(
-                                    anova__percentile = percentile,
-                                    nn__optimizer = ['SGD', 'AdamW'],
-                                    nn__init = ['glorot_normal', 'glorot_uniform'],
-                                    nn__activation_1 = ['relu', 'sigmoid', 'tanh'],
-                                    nn__activation_2 = ['relu', 'sigmoid', 'tanh'],
-                                    nn__batch_size = [32, 64, 128, 256],
-                                    nn__decay = [10.0**i for i in range(-10,-1) if i%2 == 1]
-                                )
+            anova__percentile = percentile,
+            nn__optimizer = ['SGD', 'AdamW'],
+            nn__init = ['glorot_normal', 'glorot_uniform'],
+            nn__activation_1 = ['relu', 'sigmoid', 'tanh'],
+            nn__activation_2 = ['relu', 'sigmoid', 'tanh'],
+            nn__batch_size = [32, 64, 128, 256],
+            nn__decay = [10.0**i for i in range(-10,-1) if i%2 == 1]
+        )
 
     # Cross-validation
     kfold = StratifiedKFold(n_splits=10, shuffle=True, random_state=2)
@@ -133,22 +139,22 @@ def train_test(model_type, data, labels, feature_names, percentile=[20, 40, 60, 
             clf = Pipeline([('anova', anova), ('nn', nn)])
 
         # Train model
-        clf = GridSearchCV(clf, tuned_parameters, scoring='balanced_accuracy', n_jobs=30, cv=inner_kfold)
-        #clf = RandomizedSearchCV(clf, tuned_parameters, n_iter=30, scoring='balanced_accuracy',
-        #                         n_jobs=30, cv=inner_kfold)
+        clf = GridSearchCV(clf, tuned_parameters, scoring='balanced_accuracy',
+                           n_jobs=-1, cv=inner_kfold)
+
+        # A random grid search can speed up computation if an analysis hangs:
+        # clf = RandomizedSearchCV(clf, tuned_parameters, n_iter=30, scoring='balanced_accuracy',
+        #                          n_jobs=-1, cv=inner_kfold)
 
         if model_type == 'SVM':
             clf.fit(X_train, y_train)
         elif model_type == 'DNN':
             clf.fit(X_train, y_train, nn__callbacks=[clr, es])
 
-
-         # Determine top features from feature selection
+        # Determine top features from feature selection
         selection = SelectPercentile(f_classif, percentile=clf.best_estimator_[0].percentile).fit(X_train, y_train)
         top_indices = selection.get_support(indices=True)
-        selected_features = []
-        for idx in top_indices:
-            selected_features.append(feature_names[idx])
+        selected_features = [feature_names[idx] for idx in top_indices]
         top_features.append(selected_features)
 
         # Test model
@@ -204,14 +210,14 @@ def train_test(model_type, data, labels, feature_names, percentile=[20, 40, 60, 
             params = ['nn__optimizer', 'nn__init', 'nn__decay', 'nn__batch_size',
                       'nn__activation_1', 'nn__activation_2', 'anova__percentile']
 
-        for param in params:
-            df_row_to_add.append(clf.best_params_[param])
+        df_row_to_add = [clf.best_params_[param] for param in params]
         df_row_to_add.append(sensitivity)
         df_row_to_add.append(specificity)
         df_row_to_add.append(PPV)
         df_row_to_add.append(NPV)
         folds.append('Fold ' + str(loop))
-        df_performance = df_performance.append(pd.Series(df_row_to_add, index=df_performance.columns),
+        df_performance = df_performance.append(pd.Series(df_row_to_add,
+                                                         index=df_performance.columns),
                                                ignore_index=True)
         df_performance.index = folds
 

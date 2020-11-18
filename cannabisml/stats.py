@@ -44,7 +44,7 @@ def normalize(df_features, df_covar):
     df_residuals = pd.DataFrame()
 
     # Univariate statistics
-    for idx, covar in enumerate(df.loc[:, :df_covar.columns[-1]]):
+    for covar in df.loc[:, :df_covar.columns[-1]]:
         pvalues = []
         for feature in df.loc[:, df_features.columns[0]:]:
             # t-test if covariate is nominal, pearson corr test if continuous
@@ -119,7 +119,7 @@ class ANOVASelection(BaseEstimator, TransformerMixin):
 
 
 def top_hundred(residuals, feature_names, labels):
-    """ Determines top 100 features using F-statistics.
+    """Determines top 100 features using F-statistics.
 
     Parameters
     ----------

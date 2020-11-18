@@ -4,6 +4,8 @@ import numpy as np
 from scipy import interp
 import matplotlib.pyplot as plt
 
+from sklearn.metrics import roc_curve, auc
+
 
 def plot_perfomance(probas_list, y_test_list):
     """Plot AUC of classifier performance
@@ -23,7 +25,7 @@ def plot_perfomance(probas_list, y_test_list):
     aucs = []
     for idx, probas in enumerate(probas_list):
         mean_fpr = np.linspace(0, 1, 100)
-        fpr, tpr, thresholds = roc_curve(y_test_list[idx], probas[:, 1])
+        fpr, tpr, _ = roc_curve(y_test_list[idx], probas[:, 1])
         tprs.append(interp(mean_fpr, fpr, tpr))
         tprs[-1][0] = 0.0
         roc_auc = auc(fpr, tpr)
